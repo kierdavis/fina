@@ -1,8 +1,8 @@
-use lalrpop_util::lalrpop_mod;
-use self::cmdline::{Args, Action, NewBlockers, RemovedBlockers};
+use self::cmdline::{Action, Args, NewBlockers, RemovedBlockers};
 use self::common::{Task, TaskAccess, TaskAccessMut, TaskId};
-use self::util::try_iter::TryIterator;
 use self::util::colour::Display;
+use self::util::try_iter::TryIterator;
+use lalrpop_util::lalrpop_mod;
 use std::fmt::Write;
 
 mod cmdline;
@@ -16,7 +16,7 @@ fn main() {
     Err(err) => {
       eprintln!("{}", err);
       1
-    },
+    }
   })
 }
 
@@ -28,7 +28,12 @@ fn main_returning_error() -> Result<(), Box<dyn std::error::Error>> {
   let state = store.current()?;
   let old_state = state.clone();
   let new_state = match &args.action {
-    Action::New { title, priority, labels, blockers } => {
+    Action::New {
+      title,
+      priority,
+      labels,
+      blockers,
+    } => {
       let mut task = Task {
         id: (),
         title: title.clone(),
@@ -46,8 +51,16 @@ fn main_returning_error() -> Result<(), Box<dyn std::error::Error>> {
           message: format!("create task {}", task.as_line().uncoloured()).into(),
         })
       })?
-    },
-    Action::Modify { selector, title, priority, new_labels, removed_labels, new_blockers, removed_blockers } => {
+    }
+    Action::Modify {
+      selector,
+      title,
+      priority,
+      new_labels,
+      removed_labels,
+      new_blockers,
+      removed_blockers,
+    } => {
       let filter = selector.compile();
       let mut changed_tasks = Vec::new();
       let state = state.derive(|state| {
@@ -55,14 +68,19 @@ fn main_returning_error() -> Result<(), Box<dyn std::error::Error>> {
           if filter(&task) {
             match title {
               Some(title) => task.title = title.clone(),
-              None => {},
+              None => {}
             }
             match priority {
               Some(priority) => task.priority = *priority,
-              None => {},
+              None => {}
             }
             adjust_labels(&mut task, new_labels.as_slice(), removed_labels.as_slice());
-            adjust_blockers(&mut task, new_blockers.as_slice(), removed_blockers.as_slice(), state)?;
+            adjust_blockers(
+              &mut task,
+              new_blockers.as_slice(),
+              removed_blockers.as_slice(),
+              state,
+            )?;
           }
           Ok(task)
         })?;
@@ -93,20 +111,35 @@ fn main_returning_error() -> Result<(), Box<dyn std::error::Error>> {
       })?;
       print_tasks(changed_tasks);
       state
-    },
+    }
     Action::List { selector } => {
-      print_tasks(state.tasks().filter_ok(selector.compile()).collect::<Result<Vec<_>, _>>()?);
+      print_tasks(
+        state
+          .tasks()
+          .filter_ok(selector.compile())
+          .collect::<Result<Vec<_>, _>>()?,
+      );
       state
-    },
+    }
     Action::Delete { selector } => {
       let mut deleted_tasks = Vec::new();
       let mut side_effect_tasks = Vec::new();
       let state = state.derive(|state| {
-        let task_ids_to_delete = state.tasks().filter_ok(selector.compile())
-          .map_ok(|task| { deleted_tasks.push(task.clone()); task.id })
+        let task_ids_to_delete = state
+          .tasks()
+          .filter_ok(selector.compile())
+          .map_ok(|task| {
+            deleted_tasks.push(task.clone());
+            task.id
+          })
           .collect::<Result<Vec<_>, _>>()?;
-        task_ids_to_delete.iter().copied().map(Ok).try_for_each(|id| state.delete_task(id))?;
-        side_effect_tasks = state.map_tasks(|task, _| task.without_references_to(task_ids_to_delete.iter().copied()))?;
+        task_ids_to_delete
+          .iter()
+          .copied()
+          .map(Ok)
+          .try_for_each(|id| state.delete_task(id))?;
+        side_effect_tasks = state
+          .map_tasks(|task, _| task.without_references_to(task_ids_to_delete.iter().copied()))?;
         Ok(sakaagari::CommitMetadata {
           author: AUTHOR,
           committer: AUTHOR,
@@ -138,7 +171,7 @@ fn main_returning_error() -> Result<(), Box<dyn std::error::Error>> {
         print_tasks(side_effect_tasks);
       }
       state
-    },
+    }
   };
   if new_state != old_state {
     store.set_current(&new_state)?;
@@ -153,7 +186,11 @@ fn print_tasks(mut tasks: Vec<Task<TaskId>>) {
   }
 }
 
-fn adjust_labels<'a, Id, I: IntoIterator<Item=&'a String>>(task: &mut Task<Id>, new: I, removed: I) {
+fn adjust_labels<'a, Id, I: IntoIterator<Item = &'a String>>(
+  task: &mut Task<Id>,
+  new: I,
+  removed: I,
+) {
   for label in removed.into_iter() {
     task.labels.remove(label);
   }
@@ -162,26 +199,39 @@ fn adjust_labels<'a, Id, I: IntoIterator<Item=&'a String>>(task: &mut Task<Id>, 
   }
 }
 
-fn adjust_blockers<Id, A: TaskAccess>(task: &mut Task<Id>, new: &[NewBlockers], removed: &[RemovedBlockers], access: &A) -> Result<(), sakaagari::Error> {
+fn adjust_blockers<Id, A: TaskAccess>(
+  task: &mut Task<Id>,
+  new: &[NewBlockers],
+  removed: &[RemovedBlockers],
+  access: &A,
+) -> Result<(), sakaagari::Error> {
   for b in removed {
     match b {
-      RemovedBlockers::Tasks(selector) => access.tasks().filter_ok(selector.compile()).for_each_ok(|task_to_remove| {
-        task.blocked_on.remove(&task_to_remove.id);
-      })?,
+      RemovedBlockers::Tasks(selector) => access
+        .tasks()
+        .filter_ok(selector.compile())
+        .for_each_ok(|task_to_remove| {
+          task.blocked_on.remove(&task_to_remove.id);
+        })?,
       RemovedBlockers::Date => task.blocked_until = None,
       RemovedBlockers::Reason => task.blocked_by = None,
       RemovedBlockers::All => {
         task.blocked_on.clear();
         task.blocked_until = None;
         task.blocked_by = None;
-      },
+      }
     }
   }
   for b in new {
     match b {
-      NewBlockers::Tasks(selector) => access.tasks().filter_ok(selector.compile()).for_each_ok(|task_to_add| {
-        task.blocked_on.insert(task_to_add.id);
-      })?,
+      NewBlockers::Tasks(selector) => {
+        access
+          .tasks()
+          .filter_ok(selector.compile())
+          .for_each_ok(|task_to_add| {
+            task.blocked_on.insert(task_to_add.id);
+          })?
+      }
       NewBlockers::Date(date) => task.blocked_until = Some(date.clone()),
       NewBlockers::Reason(reason) => task.blocked_by = Some(reason.clone()),
     }

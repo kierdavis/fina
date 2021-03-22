@@ -1,22 +1,26 @@
+use crate::util::try_iter::TryIterator;
 use crate::util::{Date, FrozenSet};
-use regex::Regex;
 use itertools::Itertools;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
+use std::collections::HashSet;
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
-use std::collections::HashSet;
-use std::borrow::Cow;
 use std::str::FromStr;
-use crate::util::try_iter::TryIterator;
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(transparent)]
 pub struct TaskId(u64);
 impl From<u64> for TaskId {
-  fn from(x: u64) -> Self { TaskId(x) }
+  fn from(x: u64) -> Self {
+    TaskId(x)
+  }
 }
 impl From<TaskId> for u64 {
-  fn from(x: TaskId) -> Self { x.0 }
+  fn from(x: TaskId) -> Self {
+    x.0
+  }
 }
 impl std::fmt::Display for TaskId {
   fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -39,7 +43,15 @@ impl sakaagari::Key for TaskId {
   }
   fn from_path(path: &Path) -> Option<Self> {
     if path.parent() == Some(Path::new("tasks")) {
-      path.file_name().and_then(|name| name.to_string_lossy().strip_suffix(".toml").and_then(|num| u64::from_str(num).ok())).map(TaskId)
+      path
+        .file_name()
+        .and_then(|name| {
+          name
+            .to_string_lossy()
+            .strip_suffix(".toml")
+            .and_then(|num| u64::from_str(num).ok())
+        })
+        .map(TaskId)
     } else {
       None
     }
@@ -70,10 +82,14 @@ pub enum Priority {
   Urgent,
 }
 impl Priority {
-  fn is_default(&self) -> bool { *self == Priority::Default }
+  fn is_default(&self) -> bool {
+    *self == Priority::Default
+  }
 }
 impl Default for Priority {
-  fn default() -> Self { Priority::Default }
+  fn default() -> Self {
+    Priority::Default
+  }
 }
 impl Display for Priority {
   fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -132,7 +148,8 @@ impl<Id> Task<Id> {
     self
   }
   pub fn without_references_to<I>(mut self, ids: I) -> Self
-    where I: IntoIterator<Item=TaskId>
+  where
+    I: IntoIterator<Item = TaskId>,
   {
     for id in ids {
       self.blocked_on.remove(&id);
@@ -186,11 +203,11 @@ impl<Id: Display> Task<Id> {
         }
         match &self.0.blocked_by {
           Some(x) => write!(f, " (blocked by: {})", x)?,
-          None => {},
+          None => {}
         }
         match &self.0.blocked_until {
           Some(x) => write!(f, " (blocked until {})", x)?,
-          None => {},
+          None => {}
         }
         if !self.0.blocked_on.is_empty() {
           write!(f, " (blocked on")?;
@@ -235,14 +252,14 @@ impl Default for Task<()> {
 }
 
 pub trait TaskAccess: sakaagari::Access {
-  fn task_ids<'a>(&'a self) -> Box<dyn Iterator<Item=TaskId> + 'a> {
+  fn task_ids<'a>(&'a self) -> Box<dyn Iterator<Item = TaskId> + 'a> {
     self.keys::<TaskId>()
   }
   fn next_task_id(&self) -> TaskId {
     let existing_ids = self.task_ids().map(u64::from).collect::<HashSet<_>>();
     TaskId::from((1..).filter(|x| !existing_ids.contains(x)).next().unwrap())
   }
-  fn tasks<'a>(&'a self) -> Box<dyn Iterator<Item=Result<Task<TaskId>, sakaagari::Error>> + 'a> {
+  fn tasks<'a>(&'a self) -> Box<dyn Iterator<Item = Result<Task<TaskId>, sakaagari::Error>> + 'a> {
     self.values::<TaskId>()
   }
   fn get_task(&self, id: TaskId) -> Result<Task<TaskId>, sakaagari::Error> {
@@ -263,9 +280,12 @@ pub trait TaskAccessMut: sakaagari::AccessMut + TaskAccess {
     self.delete(&id)
   }
   fn try_map_tasks<F, E>(&mut self, mut f: F) -> Result<Vec<Task<TaskId>>, E>
-    where F: FnMut(Task<TaskId>, &Self) -> Result<Task<TaskId>, E>, E: From<sakaagari::Error>
+  where
+    F: FnMut(Task<TaskId>, &Self) -> Result<Task<TaskId>, E>,
+    E: From<sakaagari::Error>,
   {
-    self.tasks()
+    self
+      .tasks()
       .map_err(E::from)
       .try_filter_map(|old_task| {
         let new_task = f(old_task.clone(), self)?.sanitised();
@@ -281,7 +301,8 @@ pub trait TaskAccessMut: sakaagari::AccessMut + TaskAccess {
       .collect()
   }
   fn map_tasks<F>(&mut self, mut f: F) -> Result<Vec<Task<TaskId>>, sakaagari::Error>
-    where F: FnMut(Task<TaskId>, &Self) -> Task<TaskId>
+  where
+    F: FnMut(Task<TaskId>, &Self) -> Task<TaskId>,
   {
     self.try_map_tasks(move |t, a| Ok(f(t, a)))
   }
@@ -309,9 +330,13 @@ impl Selector {
     }
   }
   pub fn all<I>(children: I) -> Self
-    where I: IntoIterator<Item=Selector>
+  where
+    I: IntoIterator<Item = Selector>,
   {
-    let children: FrozenSet<_> = children.into_iter().filter(|child| child != &Selector::Everything).collect();
+    let children: FrozenSet<_> = children
+      .into_iter()
+      .filter(|child| child != &Selector::Everything)
+      .collect();
     match children.len() {
       0 => Selector::Everything,
       1 => children.into_iter().next().unwrap(),
@@ -322,15 +347,20 @@ impl Selector {
     Self::all(vec![a, b])
   }
   pub fn any<I>(children: I) -> Self
-    where I: IntoIterator<Item=Selector>
+  where
+    I: IntoIterator<Item = Selector>,
   {
-    let children: FrozenSet<_> = children.into_iter().filter(|child| child != &Selector::Nothing).collect();
+    let children: FrozenSet<_> = children
+      .into_iter()
+      .filter(|child| child != &Selector::Nothing)
+      .collect();
     match children.len() {
       0 => Selector::Nothing,
       1 => children.into_iter().next().unwrap(),
       _ => Selector::Any(children),
     }
   }
+  #[allow(dead_code)]
   pub fn or(a: Selector, b: Selector) -> Self {
     Self::any(vec![a, b])
   }
@@ -342,31 +372,31 @@ impl Selector {
       Selector::Id(id) => {
         let id = *id;
         Box::new(move |task| task.id == id)
-      },
+      }
       Selector::Label(label) => {
         let label = label.clone();
         Box::new(move |task| task.labels.contains(&label))
-      },
+      }
       Selector::Word(word) => {
         let regex = Regex::new(&format!("(?i)\\b{}\\b", word)).unwrap();
         Box::new(move |task| regex.is_match(&task.title))
-      },
+      }
       Selector::Priority(priority) => {
         let priority = *priority;
         Box::new(move |task| task.priority == priority)
-      },
+      }
       Selector::Not(child) => {
         let child = child.compile();
         Box::new(move |task| !child(task))
-      },
+      }
       Selector::All(children) => {
         let children: Vec<_> = children.iter().map(Selector::compile).collect();
         Box::new(move |task| children.iter().all(move |child| child(task)))
-      },
+      }
       Selector::Any(children) => {
         let children: Vec<_> = children.iter().map(Selector::compile).collect();
         Box::new(move |task| children.iter().any(move |child| child(task)))
-      },
+      }
     }
   }
   fn fmt_impl(&self, f: &mut std::fmt::Formatter, atom_required: bool) -> std::fmt::Result {
@@ -378,19 +408,33 @@ impl Selector {
       Selector::Label(label) => write!(f, "@{}", label),
       Selector::Word(word) => word.fmt(f),
       Selector::Priority(priority) => priority.fmt(f),
-      Selector::Not(child) => { f.write_str("not ")?; child.fmt_impl(f, true) },
+      Selector::Not(child) => {
+        f.write_str("not ")?;
+        child.fmt_impl(f, true)
+      }
       Selector::All(children) => Self::fmt_children(f, children, atom_required, " and "),
       Selector::Any(children) => Self::fmt_children(f, children, atom_required, " or "),
     }
   }
-  fn fmt_children(f: &mut std::fmt::Formatter, children: &FrozenSet<Selector>, atom_required: bool, separator: &'static str) -> std::fmt::Result {
+  fn fmt_children(
+    f: &mut std::fmt::Formatter,
+    children: &FrozenSet<Selector>,
+    atom_required: bool,
+    separator: &'static str,
+  ) -> std::fmt::Result {
     use std::fmt::Write;
-    if atom_required { f.write_char('(')?; }
+    if atom_required {
+      f.write_char('(')?;
+    }
     for (i, child) in children.iter().enumerate() {
-      if i != 0 { f.write_str(separator)?; }
+      if i != 0 {
+        f.write_str(separator)?;
+      }
       child.fmt_impl(f, true)?;
     }
-    if atom_required { f.write_char(')')?; }
+    if atom_required {
+      f.write_char(')')?;
+    }
     Ok(())
   }
 }
@@ -399,9 +443,13 @@ impl std::str::FromStr for Selector {
   // borrows the input string.
   type Err = String;
   fn from_str(s: &str) -> Result<Self, Self::Err> {
-    crate::parse::SelectorParser::new().parse(s).map_err(|e| e.to_string())
+    crate::parse::SelectorParser::new()
+      .parse(s)
+      .map_err(|e| e.to_string())
   }
 }
 impl std::fmt::Display for Selector {
-  fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { self.fmt_impl(f, false) }
+  fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    self.fmt_impl(f, false)
+  }
 }

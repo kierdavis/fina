@@ -1,8 +1,8 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
-use std::iter::FromIterator;
 use std::hash::{Hash, Hasher};
+use std::iter::FromIterator;
 use std::str::FromStr;
-use serde::{Serialize, Deserialize};
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Date(chrono::NaiveDate);
@@ -16,10 +16,14 @@ impl Date {
   }
 }
 impl From<chrono::NaiveDate> for Date {
-  fn from(x: chrono::NaiveDate) -> Self { Date(x) }
+  fn from(x: chrono::NaiveDate) -> Self {
+    Date(x)
+  }
 }
 impl From<Date> for chrono::NaiveDate {
-  fn from(x: Date) -> Self { x.0 }
+  fn from(x: Date) -> Self {
+    x.0
+  }
 }
 impl std::fmt::Display for Date {
   fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -40,8 +44,7 @@ impl Serialize for Date {
 impl<'de> Deserialize<'de> for Date {
   fn deserialize<D: serde::de::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
     use serde::de::Error;
-    Self::from_str(<&'de str>::deserialize(d)?)
-      .map_err(|err| D::Error::custom(err.to_string()))
+    Self::from_str(<&'de str>::deserialize(d)?).map_err(|err| D::Error::custom(err.to_string()))
   }
 }
 
@@ -57,10 +60,14 @@ impl Time {
   }
 }
 impl From<chrono::NaiveTime> for Time {
-  fn from(x: chrono::NaiveTime) -> Self { Time(x) }
+  fn from(x: chrono::NaiveTime) -> Self {
+    Time(x)
+  }
 }
 impl From<Time> for chrono::NaiveTime {
-  fn from(x: Time) -> Self { x.0 }
+  fn from(x: Time) -> Self {
+    x.0
+  }
 }
 impl std::fmt::Display for Time {
   fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -81,29 +88,43 @@ impl Serialize for Time {
 impl<'de> Deserialize<'de> for Time {
   fn deserialize<D: serde::de::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
     use serde::de::Error;
-    Self::from_str(<&'de str>::deserialize(d)?)
-      .map_err(|err| D::Error::custom(err.to_string()))
+    Self::from_str(<&'de str>::deserialize(d)?).map_err(|err| D::Error::custom(err.to_string()))
   }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FrozenSet<T: Eq + Hash>(HashSet<T>);
 impl<T: Eq + Hash> FrozenSet<T> {
-  pub fn new() -> Self { FrozenSet(HashSet::new()) }
-  pub fn is_empty(&self) -> bool { self.0.is_empty() }
-  pub fn iter(&self) -> impl Iterator<Item=&T> { self.0.iter() }
-  pub fn len(&self) -> usize { self.0.len() }
+  pub fn new() -> Self {
+    FrozenSet(HashSet::new())
+  }
+  pub fn is_empty(&self) -> bool {
+    self.0.is_empty()
+  }
+  pub fn iter(&self) -> impl Iterator<Item = &T> {
+    self.0.iter()
+  }
+  pub fn len(&self) -> usize {
+    self.0.len()
+  }
 }
 impl<T: Eq + Hash> From<HashSet<T>> for FrozenSet<T> {
-  fn from(x: HashSet<T>) -> FrozenSet<T> { FrozenSet(x) }
+  fn from(x: HashSet<T>) -> FrozenSet<T> {
+    FrozenSet(x)
+  }
 }
 impl<T: Eq + Hash> From<FrozenSet<T>> for HashSet<T> {
-  fn from(x: FrozenSet<T>) -> HashSet<T> { x.0 }
+  fn from(x: FrozenSet<T>) -> HashSet<T> {
+    x.0
+  }
 }
 impl<T: Eq + Hash> FromIterator<T> for FrozenSet<T> {
   fn from_iter<I>(iter: I) -> FrozenSet<T>
-    where I: IntoIterator<Item=T>
-  { FrozenSet(HashSet::from_iter(iter)) }
+  where
+    I: IntoIterator<Item = T>,
+  {
+    FrozenSet(HashSet::from_iter(iter))
+  }
 }
 impl<T: Eq + Hash> Hash for FrozenSet<T> {
   fn hash<H: Hasher>(&self, state: &mut H) {
@@ -123,7 +144,9 @@ impl<T: Eq + Hash> Hash for FrozenSet<T> {
 impl<T: Eq + Hash> IntoIterator for FrozenSet<T> {
   type Item = T;
   type IntoIter = <HashSet<T> as IntoIterator>::IntoIter;
-  fn into_iter(self) -> Self::IntoIter { self.0.into_iter() }
+  fn into_iter(self) -> Self::IntoIter {
+    self.0.into_iter()
+  }
 }
 /*
 macro_rules! frozenset {
@@ -137,11 +160,15 @@ pub mod try_iter {
     type Ok;
     type Err;
     fn try_next(&mut self) -> Result<Option<Self::Ok>, Self::Err>;
-    fn iter<'a>(self) -> Box<dyn Iterator<Item=Result<Self::Ok, Self::Err>> + 'a>
-      where Self: 'a
+    fn iter<'a>(self) -> Box<dyn Iterator<Item = Result<Self::Ok, Self::Err>> + 'a>
+    where
+      Self: 'a,
     {
       struct Proxy<T>(T);
-      impl<T> Iterator for Proxy<T> where T: TryIterator {
+      impl<T> Iterator for Proxy<T>
+      where
+        T: TryIterator,
+      {
         type Item = Result<T::Ok, T::Err>;
         fn next(&mut self) -> Option<Result<T::Ok, T::Err>> {
           self.0.try_next().transpose()
@@ -150,8 +177,13 @@ pub mod try_iter {
       Box::new(Proxy(self))
     }
 
-    fn try_filter<'a, F>(self, mut f: F) -> Box<dyn Iterator<Item=Result<Self::Ok, Self::Err>> + 'a>
-      where Self: 'a, F: FnMut(&Self::Ok) -> Result<bool, Self::Err> + 'a
+    fn try_filter<'a, F>(
+      self,
+      mut f: F,
+    ) -> Box<dyn Iterator<Item = Result<Self::Ok, Self::Err>> + 'a>
+    where
+      Self: 'a,
+      F: FnMut(&Self::Ok) -> Result<bool, Self::Err> + 'a,
     {
       Box::new(self.iter().filter_map(move |r| match r {
         Ok(o) => match f(&o) {
@@ -162,59 +194,103 @@ pub mod try_iter {
         Err(e) => Some(Err(e)),
       }))
     }
-    fn filter_ok<'a, F>(self, mut f: F) -> Box<dyn Iterator<Item=Result<Self::Ok, Self::Err>> + 'a>
-      where Self: 'a, F: FnMut(&Self::Ok) -> bool + 'a
+    fn filter_ok<'a, F>(
+      self,
+      mut f: F,
+    ) -> Box<dyn Iterator<Item = Result<Self::Ok, Self::Err>> + 'a>
+    where
+      Self: 'a,
+      F: FnMut(&Self::Ok) -> bool + 'a,
     {
       self.try_filter(move |r| Ok(f(r)))
     }
 
-    fn try_filter_map<'a, F, NewOk>(self, mut f: F) -> Box<dyn Iterator<Item=Result<NewOk, Self::Err>> + 'a>
-      where Self: 'a, F: FnMut(Self::Ok) -> Result<Option<NewOk>, Self::Err> + 'a
+    fn try_filter_map<'a, F, NewOk>(
+      self,
+      mut f: F,
+    ) -> Box<dyn Iterator<Item = Result<NewOk, Self::Err>> + 'a>
+    where
+      Self: 'a,
+      F: FnMut(Self::Ok) -> Result<Option<NewOk>, Self::Err> + 'a,
     {
       Box::new(self.iter().filter_map(move |r| match r {
         Ok(o) => f(o).transpose(),
         Err(e) => Some(Err(e)),
       }))
     }
-    fn filter_map_ok<'a, F, NewOk>(self, mut f: F) -> Box<dyn Iterator<Item=Result<NewOk, Self::Err>> + 'a>
-      where Self: 'a, F: FnMut(Self::Ok) -> Option<NewOk> + 'a
+    fn filter_map_ok<'a, F, NewOk>(
+      self,
+      mut f: F,
+    ) -> Box<dyn Iterator<Item = Result<NewOk, Self::Err>> + 'a>
+    where
+      Self: 'a,
+      F: FnMut(Self::Ok) -> Option<NewOk> + 'a,
     {
       self.try_filter_map(move |r| Ok(f(r)))
     }
 
     fn try_for_each<F>(self, mut f: F) -> Result<(), Self::Err>
-      where F: FnMut(Self::Ok) -> Result<(), Self::Err>
+    where
+      F: FnMut(Self::Ok) -> Result<(), Self::Err>,
     {
-      self.iter().fold(Ok(()), move |accum, r| accum.and_then(move |_| r).and_then(|o| f(o)))
+      self.iter().fold(Ok(()), move |accum, r| {
+        accum.and_then(move |_| r).and_then(|o| f(o))
+      })
     }
     fn for_each_ok<F>(self, mut f: F) -> Result<(), Self::Err>
-      where F: FnMut(Self::Ok)
+    where
+      F: FnMut(Self::Ok),
     {
       self.try_for_each(move |r| Ok(f(r)))
     }
 
-    fn try_map<'a, F, NewOk>(self, mut f: F) -> Box<dyn Iterator<Item=Result<NewOk, Self::Err>> + 'a>
-      where Self: 'a, F: FnMut(Self::Ok) -> Result<NewOk, Self::Err> + 'a
+    fn try_map<'a, F, NewOk>(
+      self,
+      mut f: F,
+    ) -> Box<dyn Iterator<Item = Result<NewOk, Self::Err>> + 'a>
+    where
+      Self: 'a,
+      F: FnMut(Self::Ok) -> Result<NewOk, Self::Err> + 'a,
     {
       Box::new(self.iter().map(move |r| r.and_then(|o| f(o))))
     }
-    fn map_ok<'a, F, NewOk>(self, mut f: F) -> Box<dyn Iterator<Item=Result<NewOk, Self::Err>> + 'a>
-      where Self: 'a, F: FnMut(Self::Ok) -> NewOk + 'a
+    fn map_ok<'a, F, NewOk>(
+      self,
+      mut f: F,
+    ) -> Box<dyn Iterator<Item = Result<NewOk, Self::Err>> + 'a>
+    where
+      Self: 'a,
+      F: FnMut(Self::Ok) -> NewOk + 'a,
     {
       self.try_map(move |r| Ok(f(r)))
     }
-    fn map_err<'a, F, NewErr>(self, mut f: F) -> Box<dyn Iterator<Item=Result<Self::Ok, NewErr>> + 'a>
-      where Self: 'a, F: FnMut(Self::Err) -> NewErr + 'a
+    fn map_err<'a, F, NewErr>(
+      self,
+      mut f: F,
+    ) -> Box<dyn Iterator<Item = Result<Self::Ok, NewErr>> + 'a>
+    where
+      Self: 'a,
+      F: FnMut(Self::Err) -> NewErr + 'a,
     {
       Box::new(self.iter().map(move |r| r.map_err(|o| f(o))))
     }
   }
 
-  impl<T, Ok, Err> TryIterator for T where T: Iterator<Item=Result<Ok, Err>> {
+  impl<T, Ok, Err> TryIterator for T
+  where
+    T: Iterator<Item = Result<Ok, Err>>,
+  {
     type Ok = Ok;
     type Err = Err;
-    fn try_next(&mut self) -> Result<Option<Ok>, Err> { self.next().transpose() }
-    fn iter<'a>(self) -> Box<dyn Iterator<Item=Result<Ok, Err>> + 'a> where Self: 'a { Box::new(self) }
+    fn try_next(&mut self) -> Result<Option<Ok>, Err> {
+      self.next().transpose()
+    }
+    fn iter<'a>(self) -> Box<dyn Iterator<Item = Result<Ok, Err>> + 'a>
+    where
+      Self: 'a,
+    {
+      Box::new(self)
+    }
   }
 }
 
@@ -291,21 +367,32 @@ pub mod colour {
         Ok(())
       }
     }
-    pub fn write_str(&mut self, data: &str) -> std::fmt::Result { self.inner.write_str(data) }
-    pub fn write_fmt(&mut self, fmt: std::fmt::Arguments<'_>) -> std::fmt::Result { self.inner.write_fmt(fmt) }
+    pub fn write_str(&mut self, data: &str) -> std::fmt::Result {
+      self.inner.write_str(data)
+    }
+    pub fn write_fmt(&mut self, fmt: std::fmt::Arguments<'_>) -> std::fmt::Result {
+      self.inner.write_fmt(fmt)
+    }
   }
 
   pub trait Display {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result;
-    fn coloured(&self) -> ColouredDisplay<Self> { ColouredDisplay(self) }
-    fn uncoloured(&self) -> UncolouredDisplay<Self> { UncolouredDisplay(self) }
+    fn coloured(&self) -> ColouredDisplay<Self> {
+      ColouredDisplay(self)
+    }
+    fn uncoloured(&self) -> UncolouredDisplay<Self> {
+      UncolouredDisplay(self)
+    }
   }
 
   #[derive(Debug)]
   pub struct ColouredDisplay<'a, T: ?Sized>(&'a T);
   impl<'a, T: Display> std::fmt::Display for ColouredDisplay<'a, T> {
     fn fmt(&self, inner: &mut std::fmt::Formatter) -> std::fmt::Result {
-      self.0.fmt(&mut Formatter { inner, enable: true })
+      self.0.fmt(&mut Formatter {
+        inner,
+        enable: true,
+      })
     }
   }
 
@@ -313,7 +400,10 @@ pub mod colour {
   pub struct UncolouredDisplay<'a, T: ?Sized>(&'a T);
   impl<'a, T: Display> std::fmt::Display for UncolouredDisplay<'a, T> {
     fn fmt(&self, inner: &mut std::fmt::Formatter) -> std::fmt::Result {
-      self.0.fmt(&mut Formatter { inner, enable: false })
+      self.0.fmt(&mut Formatter {
+        inner,
+        enable: false,
+      })
     }
   }
 }
