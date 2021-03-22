@@ -278,7 +278,7 @@ pub trait TaskAccessMut: sakaagari::AccessMut + TaskAccess {
       .collect::<Vec<_>>()
       .into_iter()
       .try_map(move |task| self.save_task(task).map_err(E::from))
-      .try_collect()
+      .collect()
   }
   fn map_tasks<F>(&mut self, mut f: F) -> Result<Vec<Task<TaskId>>, sakaagari::Error>
     where F: FnMut(Task<TaskId>, &Self) -> Task<TaskId>

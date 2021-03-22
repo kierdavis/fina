@@ -133,29 +133,6 @@ macro_rules! frozenset {
 */
 
 pub mod try_iter {
-  use std::iter::FromIterator;
-  
-  pub trait TryFromIterator<Ok, Err>: Sized {
-    fn try_from_iter<I>(iter: I) -> Result<Self, Err>
-      where I: TryIterator<Ok=Ok, Err=Err>;
-  }
-
-  impl<T, Ok, Err> TryFromIterator<Ok, Err> for T where T: FromIterator<Ok> {
-    fn try_from_iter<I>(iter: I) -> Result<Self, Err>
-      where I: TryIterator<Ok=Ok, Err=Err>
-    {
-      let mut err = None;
-      let collection = Self::from_iter(iter.iter().filter_map(|r| match r {
-        Ok(o) => Some(o),
-        Err(e) => { err = Some(e); None },
-      }));
-      match err {
-        Some(e) => Err(e),
-        None => Ok(collection),
-      }
-    }
-  }
-
   pub trait TryIterator: Iterator + Sized {
     type Ok;
     type Err;
@@ -171,12 +148,6 @@ pub mod try_iter {
         }
       }
       Box::new(Proxy(self))
-    }
-
-    fn try_collect<B>(self) -> Result<B, Self::Err>
-      where B: TryFromIterator<Self::Ok, Self::Err>
-    {
-      B::try_from_iter(self)
     }
 
     fn try_filter<'a, F>(self, mut f: F) -> Box<dyn Iterator<Item=Result<Self::Ok, Self::Err>> + 'a>

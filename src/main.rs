@@ -78,16 +78,16 @@ fn main_returning_error() -> Result<(), Box<dyn std::error::Error>> {
       state
     },
     Action::List { selector } => {
-      print_tasks(state.tasks().filter_ok(selector.compile()).try_collect()?);
+      print_tasks(state.tasks().filter_ok(selector.compile()).collect::<Result<Vec<_>, _>>()?);
       state
     },
     Action::Delete { selector } => {
       let mut deleted_tasks = Vec::new();
       let mut side_effect_tasks = Vec::new();
       let state = state.derive(|state| {
-        let task_ids_to_delete: Vec<_> = state.tasks().filter_ok(selector.compile())
+        let task_ids_to_delete = state.tasks().filter_ok(selector.compile())
           .map_ok(|task| { deleted_tasks.push(task.clone()); task.id })
-          .try_collect()?;
+          .collect::<Result<Vec<_>, _>>()?;
         task_ids_to_delete.iter().copied().map(Ok).try_for_each(|id| state.delete_task(id))?;
         side_effect_tasks = state.map_tasks(|task, _| task.without_references_to(task_ids_to_delete.iter().copied()))?;
         Ok(sakaagari::CommitMetadata {
