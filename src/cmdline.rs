@@ -245,7 +245,7 @@ impl Args {
         },
         ("list", Some(matches)) => {
           let selector = matches.value_of_lossy("selector").map(must_parse).unwrap_or(Selector::Everything);
-          let selector = if matches.is_present("include_blocked") {
+          let selector = if matches.is_present("include_blocked") || contains_explicit_blocked(&selector) {
             selector
           } else {
             Selector::and(selector, Selector::not(Selector::Blocked))
@@ -267,6 +267,16 @@ fn validate<T>(input: String) -> Result<(), String> where T: FromStr, T::Err: Di
 
 fn must_parse<T, I: AsRef<str>>(input: I) -> T where T: FromStr, T::Err: Debug {
   T::from_str(input.as_ref()).unwrap()
+}
+
+fn contains_explicit_blocked(selector: &Selector) -> bool {
+  match selector {
+    Selector::Blocked => true,
+    Selector::Not(child) => contains_explicit_blocked(child),
+    Selector::All(children) => children.iter().any(contains_explicit_blocked),
+    Selector::Any(children) => children.iter().any(contains_explicit_blocked),
+    _ => false,
+  }
 }
 
 #[cfg(test)]
