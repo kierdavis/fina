@@ -603,9 +603,9 @@ dependencies = [
 
 [[package]]
 name = "sakaagari"
-version = "0.1.1"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cae2b01f50e8805598dd76e4b43e45b6e20aef179e47046fe2c6b067040a3b38"
+checksum = "6bd97fda85f9d858bcaea5a369c579701eacf5c56d9ded175222e3ce3f8b38aa"
 dependencies = [
  "git2",
  "serde",

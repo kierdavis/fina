@@ -19,6 +19,6 @@ dirs = { version = "3.0.1", default-features = false }
 itertools = { version = "0.9", default-features = false }
 lalrpop-util = { version = "0.19.0", default-features = false }
 regex = "1.4.2"
-sakaagari = { version = "0.1", default-features = false }
+sakaagari = { version = "0.2", default-features = false }
 serde = { version = "1.0.117", default-features = false, features = ["derive"] }
 toml = { version = "0.5.7", default-features = false }

@@ -61,11 +61,7 @@ fn main_returning_error() -> Result<(), Box<dyn std::error::Error>> {
       state.derive(move |state| {
         let task = state.add_task(task)?;
         println!("{}", task.as_line().coloured());
-        Ok(sakaagari::CommitMetadata {
-          author: AUTHOR,
-          committer: AUTHOR,
-          message: format!("create task {}", task.as_line().uncoloured()).into(),
-        })
+        Ok(format!("create task {}", task.as_line().uncoloured()).into())
       })?
     }
     Action::Modify {
@@ -100,29 +96,25 @@ fn main_returning_error() -> Result<(), Box<dyn std::error::Error>> {
           }
           Ok(task)
         })?;
-        Ok(sakaagari::CommitMetadata {
-          author: AUTHOR,
-          committer: AUTHOR,
-          message: match changed_tasks.len() {
-            0 => "modify no tasks".into(),
-            1 => format!(
-              "modify task {}",
-              changed_tasks.iter().next().unwrap().as_line().uncoloured()
-            )
-            .into(),
-            _ => {
-              changed_tasks.sort_by(Task::default_cmp);
-              let mut s = format!(
-                "modify {} tasks matching '{}':\n",
-                changed_tasks.len(),
-                selector
-              );
-              for task in changed_tasks.iter() {
-                let _ = write!(s, "\n{}", task.as_line().uncoloured());
-              }
-              s.into()
+        Ok(match changed_tasks.len() {
+          0 => "modify no tasks".into(),
+          1 => format!(
+            "modify task {}",
+            changed_tasks.iter().next().unwrap().as_line().uncoloured()
+          )
+          .into(),
+          _ => {
+            changed_tasks.sort_by(Task::default_cmp);
+            let mut s = format!(
+              "modify {} tasks matching '{}':\n",
+              changed_tasks.len(),
+              selector
+            );
+            for task in changed_tasks.iter() {
+              let _ = write!(s, "\n{}", task.as_line().uncoloured());
             }
-          },
+            s.into()
+          }
         })
       })?;
       print_tasks(changed_tasks);
@@ -156,29 +148,25 @@ fn main_returning_error() -> Result<(), Box<dyn std::error::Error>> {
           .try_for_each(|id| state.delete_task(id))?;
         side_effect_tasks = state
           .map_tasks(|task, _| task.without_references_to(task_ids_to_delete.iter().copied()))?;
-        Ok(sakaagari::CommitMetadata {
-          author: AUTHOR,
-          committer: AUTHOR,
-          message: match deleted_tasks.len() {
-            0 => "delete no tasks".into(),
-            1 => format!(
-              "delete task {}",
-              deleted_tasks.iter().next().unwrap().as_line().uncoloured()
-            )
-            .into(),
-            _ => {
-              deleted_tasks.sort_by(Task::default_cmp);
-              let mut s = format!(
-                "delete {} tasks matching '{}':\n",
-                deleted_tasks.len(),
-                selector
-              );
-              for task in deleted_tasks.iter() {
-                let _ = write!(s, "\n{}", task.as_line().uncoloured());
-              }
-              s.into()
+        Ok(match deleted_tasks.len() {
+          0 => "delete no tasks".into(),
+          1 => format!(
+            "delete task {}",
+            deleted_tasks.iter().next().unwrap().as_line().uncoloured()
+          )
+          .into(),
+          _ => {
+            deleted_tasks.sort_by(Task::default_cmp);
+            let mut s = format!(
+              "delete {} tasks matching '{}':\n",
+              deleted_tasks.len(),
+              selector
+            );
+            for task in deleted_tasks.iter() {
+              let _ = write!(s, "\n{}", task.as_line().uncoloured());
             }
-          },
+            s.into()
+          }
         })
       })?;
       print_tasks(deleted_tasks);
@@ -254,8 +242,3 @@ fn adjust_blockers<Id, A: TaskAccess>(
   }
   Ok(())
 }
-
-const AUTHOR: sakaagari::Author<'static> = sakaagari::Author {
-  name: std::borrow::Cow::Borrowed("Kier Davis"),
-  email: std::borrow::Cow::Borrowed("me@kierdavis.com"),
-};
