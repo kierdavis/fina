@@ -149,7 +149,11 @@ impl<Id> Task<Id> {
 }
 impl<Id: Ord> Task<Id> {
   pub fn default_sort_key<'a>(&'a self) -> impl std::cmp::Ord + 'a {
-    (!self.is_blocked(), self.priority, &self.id)
+    if self.is_blocked() {
+      (false, Priority::Default, &self.id)
+    } else {
+      (true, self.priority, &self.id)
+    }
   }
   pub fn default_cmp(&self, other: &Self) -> std::cmp::Ordering {
     self.default_sort_key().cmp(&other.default_sort_key())
