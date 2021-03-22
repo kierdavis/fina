@@ -197,7 +197,7 @@ impl<Id: Display> Task<Id> {
         if !self.0.labels.is_empty() {
           f.set_colour(colour::LABEL)?;
           for label in self.0.labels.iter().sorted() {
-            write!(f, " {}", label)?;
+            write!(f, " @{}", label)?;
           }
           f.set_colour(task_colour)?;
         }
