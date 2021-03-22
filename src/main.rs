@@ -3,6 +3,7 @@ use self::cmdline::{Args, Action, NewBlockers, RemovedBlockers};
 use self::common::{Task, TaskAccess, TaskAccessMut, TaskId};
 use self::util::try_iter::TryIterator;
 use self::util::colour::Display;
+use std::fmt::Write;
 
 mod cmdline;
 mod common;
@@ -70,8 +71,23 @@ fn main_returning_error() -> Result<(), Box<dyn std::error::Error>> {
           committer: AUTHOR,
           message: match changed_tasks.len() {
             0 => "modify no tasks".into(),
-            1 => format!("modify task {}", changed_tasks.iter().next().unwrap().as_line().uncoloured()).into(),
-            _ => format!("modify {} tasks matching '{}':\n\n", changed_tasks.len(), selector).into(),
+            1 => format!(
+              "modify task {}",
+              changed_tasks.iter().next().unwrap().as_line().uncoloured()
+            )
+            .into(),
+            _ => {
+              changed_tasks.sort_by(Task::default_cmp);
+              let mut s = format!(
+                "modify {} tasks matching '{}':\n",
+                changed_tasks.len(),
+                selector
+              );
+              for task in changed_tasks.iter() {
+                let _ = write!(s, "\n{}", task.as_line().uncoloured());
+              }
+              s.into()
+            }
           },
         })
       })?;
@@ -96,8 +112,23 @@ fn main_returning_error() -> Result<(), Box<dyn std::error::Error>> {
           committer: AUTHOR,
           message: match deleted_tasks.len() {
             0 => "delete no tasks".into(),
-            1 => format!("delete task {}", deleted_tasks.iter().next().unwrap().as_line().uncoloured()).into(),
-            _ => format!("delete {} tasks matching '{}':\n\n", deleted_tasks.len(), selector).into(),
+            1 => format!(
+              "delete task {}",
+              deleted_tasks.iter().next().unwrap().as_line().uncoloured()
+            )
+            .into(),
+            _ => {
+              deleted_tasks.sort_by(Task::default_cmp);
+              let mut s = format!(
+                "delete {} tasks matching '{}':\n",
+                deleted_tasks.len(),
+                selector
+              );
+              for task in deleted_tasks.iter() {
+                let _ = write!(s, "\n{}", task.as_line().uncoloured());
+              }
+              s.into()
+            }
           },
         })
       })?;
