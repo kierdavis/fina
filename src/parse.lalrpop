@@ -1,0 +1,41 @@
+use crate::common::{Selector, TaskId};
+use std::str::FromStr;
+
+grammar;
+
+pub Selector: Selector = {
+  AllTwoOrMore => Selector::all(<>),
+  AnyTwoOrMore => Selector::any(<>),
+  Term,
+}
+
+AllTwoOrMore: Vec<Selector> =
+  <head:Term> <tail:AllOneOrMore> => {
+    let mut tail = tail; tail.push(head); tail
+  };
+AllOneOrMore = {
+  AllTwoOrMore,
+  Term => vec![<>],
+};
+
+AnyTwoOrMore: Vec<Selector> =
+  <head:Term> "or" <tail:AnyOneOrMore> => {
+    let mut tail = tail; tail.push(head); tail
+  };
+AnyOneOrMore = {
+  AnyTwoOrMore,
+  Term => vec![<>],
+};
+
+Term = {
+  "blocked" => Selector::Blocked,
+  TaskId => Selector::Id(<>),
+  Label => Selector::Label(<>),
+  Word => Selector::Word(<>),
+  "not" <Term> => Selector::not(<>),
+  "(" <Selector> ")",
+};
+
+TaskId: TaskId = r":[0-9]+" => TaskId::from_str(<>).unwrap();
+Label: String = r"@\S*" => String::from(&(<>[1..]));
+Word: String = r"[^:@\s]\S*" => String::from(<>);

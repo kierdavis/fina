@@ -1,0 +1,19 @@
+[package]
+name = "fina"
+version = "0.1.0"
+authors = ["Kier Davis <me@kierdavis.com>"]
+edition = "2018"
+
+[build-dependencies]
+lalrpop = { version = "0.19.0", features = ["lexer"] }
+
+[dependencies]
+chrono = "0.4.19"
+clap = "2.33.3"
+colored = "2.0.0"
+dirs = "3.0.1"
+lalrpop-util = "0.19.0"
+regex = "1.4.2"
+sakaagari = { path = "../sakaagari" }
+serde = { version = "1.0.117", features = ["derive"] }
+toml = "0.5.7"
