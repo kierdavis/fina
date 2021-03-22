@@ -1,5 +1,6 @@
 use crate::util::{Date, FrozenSet};
 use regex::Regex;
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
@@ -195,7 +196,7 @@ impl<Id: Display> Task<Id> {
         }
         if !self.0.blocked_on.is_empty() {
           write!(f, "{}", self.task_style(" (blocked on "))?;
-          for (i, id) in self.0.blocked_on.iter().enumerate() {
+          for (i, id) in self.0.blocked_on.iter().sorted().enumerate() {
             if i != 0 { write!(f, "{}", self.task_style(", "))?; }
             write!(f, "{}", style::id(id.to_string().as_str()))?;
           }
