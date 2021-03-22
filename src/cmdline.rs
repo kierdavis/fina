@@ -31,6 +31,7 @@ pub enum Action {
     priority: Priority,
     labels: Vec<String>,
     blockers: Vec<NewBlockers>,
+    blocks: Selector,
   },
   Modify {
     selector: Selector,
@@ -128,6 +129,15 @@ fn app() -> clap::App<'static, 'static> {
             .multiple(true)
             .validator(validate::<NewBlockers>)
             .help("a task selector, date, or arbitrary reason prefixed by '~'"),
+        )
+        .arg(
+          clap::Arg::with_name("blocks")
+            .long("--blocks")
+            .takes_value(true)
+            .number_of_values(1)
+            .multiple(true)
+            .validator(validate::<Selector>)
+            .help("a task selector"),
         ),
     )
     .subcommand(
@@ -243,6 +253,13 @@ impl Args {
             .flatten()
             .map(must_parse)
             .collect(),
+          blocks: Selector::any(
+            matches
+              .values_of_lossy("blocks")
+              .into_iter()
+              .flatten()
+              .map(must_parse),
+          ),
         },
         ("modify", Some(matches)) => Action::Modify {
           selector: must_parse(matches.value_of_lossy("selector").unwrap()),

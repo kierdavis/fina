@@ -49,6 +49,7 @@ fn main_returning_error() -> Result<(), Box<dyn std::error::Error>> {
       priority,
       labels,
       blockers,
+      blocks,
     } => {
       let mut task = Task {
         id: (),
@@ -58,11 +59,24 @@ fn main_returning_error() -> Result<(), Box<dyn std::error::Error>> {
       };
       adjust_labels(&mut task, labels.as_slice(), &[]);
       adjust_blockers(&mut task, blockers.as_slice(), &[], &state)?;
-      state.derive(move |state| {
+      let blocks = blocks.compile();
+      let mut side_effect_tasks = Vec::new();
+      let state = state.derive(|state| {
         let task = state.add_task(task)?;
+        side_effect_tasks = state.map_tasks(|mut other_task, _| {
+          if blocks(&other_task) {
+            other_task.blocked_on.insert(task.id);
+          }
+          other_task
+        })?;
         println!("{}", task.as_line().coloured());
         Ok(format!("create task {}", task.as_line().uncoloured()).into())
-      })?
+      })?;
+      if !side_effect_tasks.is_empty() {
+        println!("The following tasks were modified as a side effect:");
+        print_tasks(side_effect_tasks);
+      }
+      state
     }
     Action::Modify {
       selector,
