@@ -76,25 +76,23 @@ impl sakaagari::Codec<TaskId> for TaskCodec {
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum Priority {
-  Default,
   Low,
   High,
   Urgent,
 }
 impl Priority {
   fn is_default(&self) -> bool {
-    *self == Priority::Default
+    *self == Self::default()
   }
 }
 impl Default for Priority {
   fn default() -> Self {
-    Priority::Default
+    Priority::Low
   }
 }
 impl Display for Priority {
   fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
     f.write_str(match self {
-      Priority::Default => "default",
       Priority::Low => "low",
       Priority::High => "high",
       Priority::Urgent => "urgent",
@@ -105,7 +103,6 @@ impl FromStr for Priority {
   type Err = InvalidPriority;
   fn from_str(s: &str) -> Result<Priority, InvalidPriority> {
     match s.to_ascii_lowercase().as_str() {
-      "d" | "default" => Ok(Self::Default),
       "l" | "low" => Ok(Self::Low),
       "h" | "high" => Ok(Self::High),
       "u" | "urgent" => Ok(Self::Urgent),
@@ -168,7 +165,7 @@ impl<Id> Task<Id> {
 impl<Id: Ord> Task<Id> {
   pub fn default_sort_key<'a>(&'a self) -> impl std::cmp::Ord + 'a {
     if self.is_blocked() {
-      (false, Priority::Default, &self.id)
+      (false, Priority::default(), &self.id)
     } else {
       (true, self.priority, &self.id)
     }
@@ -184,7 +181,6 @@ impl<Id: Display> Task<Id> {
     impl<'a, Id: Display> colour::Display for Displayer<'a, Id> {
       fn fmt(&self, f: &mut colour::Formatter) -> std::fmt::Result {
         let task_colour = match (self.0.is_blocked(), self.0.priority) {
-          (false, Priority::Default) => colour::TASK_DEFAULT,
           (false, Priority::Low) => colour::TASK_LOW,
           (false, Priority::High) => colour::TASK_HIGH,
           (false, Priority::Urgent) => colour::TASK_URGENT,

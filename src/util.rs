@@ -340,8 +340,7 @@ pub mod colour {
   }
 
   pub const TASK_BLOCKED: Colour = Colour::BrightBlack;
-  pub const TASK_DEFAULT: Colour = Colour::BrightWhite;
-  pub const TASK_LOW: Colour = Colour::BrightCyan;
+  pub const TASK_LOW: Colour = Colour::BrightWhite;
   pub const TASK_HIGH: Colour = Colour::Yellow;
   pub const TASK_URGENT: Colour = Colour::Red;
   pub const ID: Colour = Colour::BrightMagenta;

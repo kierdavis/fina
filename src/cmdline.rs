@@ -215,7 +215,7 @@ impl Args {
           title: matches.value_of_lossy("title").unwrap().into_owned(),
           priority: matches
             .value_of_lossy("priority")
-            .map_or(Priority::Default, must_parse),
+            .map_or(Priority::default(), must_parse),
           labels: matches
             .values_of_lossy("labels")
             .into_iter()
