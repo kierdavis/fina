@@ -61,7 +61,7 @@ impl sakaagari::Codec<TaskId> for TaskCodec {
   }
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum Priority {
   Default,
   Low,
@@ -291,6 +291,7 @@ pub enum Selector {
   Id(TaskId),
   Label(String),
   Word(String),
+  Priority(Priority),
   Not(Box<Selector>),
   All(FrozenSet<Selector>),
   Any(FrozenSet<Selector>),
@@ -345,6 +346,10 @@ impl Selector {
         let regex = Regex::new(&format!("(?i)\\b{}\\b", word)).unwrap();
         Box::new(move |task| regex.is_match(&task.title))
       },
+      Selector::Priority(priority) => {
+        let priority = *priority;
+        Box::new(move |task| task.priority == priority)
+      },
       Selector::Not(child) => {
         let child = child.compile();
         Box::new(move |task| !child(task))
@@ -367,6 +372,7 @@ impl Selector {
       Selector::Id(id) => id.fmt(f),
       Selector::Label(label) => write!(f, "@{}", label),
       Selector::Word(word) => word.fmt(f),
+      Selector::Priority(priority) => priority.fmt(f),
       Selector::Not(child) => { f.write_str("not ")?; child.fmt_impl(f, true) },
       Selector::All(children) => Self::fmt_children(f, children, atom_required, " and "),
       Selector::Any(children) => Self::fmt_children(f, children, atom_required, " or "),

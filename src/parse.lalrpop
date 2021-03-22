@@ -1,4 +1,4 @@
-use crate::common::{Selector, TaskId};
+use crate::common::{Priority, Selector, TaskId};
 use std::str::FromStr;
 
 grammar;
@@ -29,6 +29,10 @@ AnyOneOrMore = {
 
 Term = {
   "blocked" => Selector::Blocked,
+  "default" => Selector::Priority(Priority::Default),
+  "low" => Selector::Priority(Priority::Low),
+  "high" => Selector::Priority(Priority::High),
+  "urgent" => Selector::Priority(Priority::Urgent),
   TaskId => Selector::Id(<>),
   Label => Selector::Label(<>),
   Word => Selector::Word(<>),
