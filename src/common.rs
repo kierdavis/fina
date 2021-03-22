@@ -235,7 +235,8 @@ pub trait TaskAccess: sakaagari::Access {
     self.keys::<TaskId>()
   }
   fn next_task_id(&self) -> TaskId {
-    TaskId(self.task_ids().map(|id| id.into()).max().unwrap_or(0) + 1)
+    let existing_ids = self.task_ids().map(u64::from).collect::<HashSet<_>>();
+    TaskId::from((1..).filter(|x| !existing_ids.contains(x)).next().unwrap())
   }
   fn tasks<'a>(&'a self) -> Box<dyn Iterator<Item=Result<Task<TaskId>, sakaagari::Error>> + 'a> {
     self.values::<TaskId>()
