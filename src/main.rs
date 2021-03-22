@@ -2,6 +2,7 @@ use lalrpop_util::lalrpop_mod;
 use self::cmdline::{Args, Action, NewBlockers, RemovedBlockers};
 use self::common::{Task, TaskAccess, TaskAccessMut, TaskId};
 use self::util::try_iter::TryIterator;
+use self::util::colour::Display;
 
 mod cmdline;
 mod common;
@@ -37,11 +38,11 @@ fn main_returning_error() -> Result<(), Box<dyn std::error::Error>> {
       adjust_blockers(&mut task, blockers.as_slice(), &[], &state)?;
       state.derive(move |state| {
         let task = state.add_task(task)?;
-        println!("{}", task.as_line());
+        println!("{}", task.as_line().coloured());
         Ok(sakaagari::CommitMetadata {
           author: AUTHOR,
           committer: AUTHOR,
-          message: format!("create task {}", task.as_line()).into(),
+          message: format!("create task {}", task.as_line().uncoloured()).into(),
         })
       })?
     },
@@ -69,7 +70,7 @@ fn main_returning_error() -> Result<(), Box<dyn std::error::Error>> {
           committer: AUTHOR,
           message: match changed_tasks.len() {
             0 => "modify no tasks".into(),
-            1 => format!("modify task {}", changed_tasks.iter().next().unwrap().as_line()).into(),
+            1 => format!("modify task {}", changed_tasks.iter().next().unwrap().as_line().uncoloured()).into(),
             _ => format!("modify {} tasks matching '{}':\n\n", changed_tasks.len(), selector).into(),
           },
         })
@@ -95,7 +96,7 @@ fn main_returning_error() -> Result<(), Box<dyn std::error::Error>> {
           committer: AUTHOR,
           message: match deleted_tasks.len() {
             0 => "delete no tasks".into(),
-            1 => format!("delete task {}", deleted_tasks.iter().next().unwrap().as_line()).into(),
+            1 => format!("delete task {}", deleted_tasks.iter().next().unwrap().as_line().uncoloured()).into(),
             _ => format!("delete {} tasks matching '{}':\n\n", deleted_tasks.len(), selector).into(),
           },
         })
@@ -117,7 +118,7 @@ fn main_returning_error() -> Result<(), Box<dyn std::error::Error>> {
 fn print_tasks(mut tasks: Vec<Task<TaskId>>) {
   tasks.sort_by(Task::default_cmp);
   for task in tasks {
-    println!("{}", task.as_line());
+    println!("{}", task.as_line().coloured());
   }
 }
 

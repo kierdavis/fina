@@ -161,48 +161,47 @@ impl<Id: Ord> Task<Id> {
   }
 }
 impl<Id: Display> Task<Id> {
-  pub fn as_line<'a>(&'a self) -> impl std::fmt::Display + 'a {
-    use crate::util::style;
-    use colored::{Colorize, ColoredString};
+  pub fn as_line<'a>(&'a self) -> impl crate::util::colour::Display + 'a {
+    use crate::util::colour;
     struct Displayer<'a, Id>(&'a Task<Id>);
-    impl<'a, Id> Displayer<'a, Id> {
-      fn task_style<C: Colorize>(&self, c: C) -> ColoredString {
-        match (self.0.is_blocked(), self.0.priority) {
-          (false, Priority::Default) => style::task_default(c),
-          (false, Priority::Low) => style::task_low(c),
-          (false, Priority::High) => style::task_high(c),
-          (false, Priority::Urgent) => style::task_urgent(c),
-          (true, _) => style::task_blocked(c),
-        }
-      }
-    }
-    impl<'a, Id: Display> std::fmt::Display for Displayer<'a, Id> {
-      fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{} {}", style::id(self.0.id.to_string().as_str()), self.task_style(self.0.title.as_str()))?;
+    impl<'a, Id: Display> colour::Display for Displayer<'a, Id> {
+      fn fmt(&self, f: &mut colour::Formatter) -> std::fmt::Result {
+        let task_colour = match (self.0.is_blocked(), self.0.priority) {
+          (false, Priority::Default) => colour::TASK_DEFAULT,
+          (false, Priority::Low) => colour::TASK_LOW,
+          (false, Priority::High) => colour::TASK_HIGH,
+          (false, Priority::Urgent) => colour::TASK_URGENT,
+          (true, _) => colour::TASK_BLOCKED,
+        };
+        f.set_colour(colour::ID)?;
+        write!(f, "{}", self.0.id)?;
+        f.set_colour(task_colour)?;
+        write!(f, " {}", self.0.title)?;
         if !self.0.labels.is_empty() {
-          let mut labels = self.0.labels.iter().collect::<Vec<_>>();
-          labels.sort();
-          for label in labels {
-            write!(f, " {}", style::label(format!("@{}", label).as_str()))?;
+          f.set_colour(colour::LABEL)?;
+          for label in self.0.labels.iter().sorted() {
+            write!(f, " {}", label)?;
           }
+          f.set_colour(task_colour)?;
         }
         match &self.0.blocked_by {
-          Some(x) => write!(f, " {}", self.task_style(format!("(blocked by: {})", x).as_str()))?,
+          Some(x) => write!(f, " (blocked by: {})", x)?,
           None => {},
         }
         match &self.0.blocked_until {
-          Some(x) => write!(f, " {}", self.task_style(format!("(blocked until {})", x).as_str()))?,
+          Some(x) => write!(f, " (blocked until {})", x)?,
           None => {},
         }
         if !self.0.blocked_on.is_empty() {
-          write!(f, "{}", self.task_style(" (blocked on "))?;
-          for (i, id) in self.0.blocked_on.iter().sorted().enumerate() {
-            if i != 0 { write!(f, "{}", self.task_style(", "))?; }
-            write!(f, "{}", style::id(id.to_string().as_str()))?;
+          write!(f, " (blocked on")?;
+          f.set_colour(colour::ID)?;
+          for id in self.0.blocked_on.iter().sorted() {
+            write!(f, " {}", id)?;
           }
-          write!(f, "{}", self.task_style(")"))?;
+          f.set_colour(task_colour)?;
+          write!(f, ")")?;
         }
-        Ok(())
+        f.reset_colour()
       }
     }
     Displayer(self)

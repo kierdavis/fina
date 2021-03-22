@@ -218,14 +218,102 @@ pub mod try_iter {
   }
 }
 
-pub mod style {
-  use colored::{Colorize, ColoredString};
-  
-  pub fn task_blocked<C: Colorize>(c: C) -> ColoredString { c.bright_black() }
-  pub fn task_default<C: Colorize>(c: C) -> ColoredString { c.bright_white() }
-  pub fn task_low<C: Colorize>(c: C) -> ColoredString { c.bright_cyan() }
-  pub fn task_high<C: Colorize>(c: C) -> ColoredString { c.yellow() }
-  pub fn task_urgent<C: Colorize>(c: C) -> ColoredString { c.red() }
-  pub fn id<C: Colorize>(c: C) -> ColoredString { c.bright_magenta() }
-  pub fn label<C: Colorize>(c: C) -> ColoredString { c.bright_green() }
+pub mod colour {
+  #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+  pub enum Colour {
+    Black,
+    Red,
+    Green,
+    Yellow,
+    Blue,
+    Magenta,
+    Cyan,
+    White,
+    BrightBlack,
+    BrightRed,
+    BrightGreen,
+    BrightYellow,
+    BrightBlue,
+    BrightMagenta,
+    BrightCyan,
+    BrightWhite,
+  }
+
+  impl Colour {
+    fn ansi_str(&self) -> &'static str {
+      use Colour::*;
+      match *self {
+        Black => "\x1b[21;30m",
+        Red => "\x1b[21;31m",
+        Green => "\x1b[21;32m",
+        Yellow => "\x1b[21;33m",
+        Blue => "\x1b[21;34m",
+        Magenta => "\x1b[21;35m",
+        Cyan => "\x1b[21;36m",
+        White => "\x1b[21;37m",
+        BrightBlack => "\x1b[1;30m",
+        BrightRed => "\x1b[1;31m",
+        BrightGreen => "\x1b[1;32m",
+        BrightYellow => "\x1b[1;33m",
+        BrightBlue => "\x1b[1;34m",
+        BrightMagenta => "\x1b[1;35m",
+        BrightCyan => "\x1b[1;36m",
+        BrightWhite => "\x1b[1;37m",
+      }
+    }
+  }
+
+  pub const TASK_BLOCKED: Colour = Colour::BrightBlack;
+  pub const TASK_DEFAULT: Colour = Colour::BrightWhite;
+  pub const TASK_LOW: Colour = Colour::BrightCyan;
+  pub const TASK_HIGH: Colour = Colour::Yellow;
+  pub const TASK_URGENT: Colour = Colour::Red;
+  pub const ID: Colour = Colour::BrightMagenta;
+  pub const LABEL: Colour = Colour::BrightGreen;
+
+  pub struct Formatter<'a, 'b> {
+    inner: &'a mut std::fmt::Formatter<'b>,
+    enable: bool,
+  }
+
+  impl<'a, 'b> Formatter<'a, 'b> {
+    pub fn set_colour(&mut self, c: Colour) -> std::fmt::Result {
+      if self.enable {
+        self.inner.write_str(c.ansi_str())
+      } else {
+        Ok(())
+      }
+    }
+    pub fn reset_colour(&mut self) -> std::fmt::Result {
+      if self.enable {
+        self.inner.write_str("\x1b[0m")
+      } else {
+        Ok(())
+      }
+    }
+    pub fn write_str(&mut self, data: &str) -> std::fmt::Result { self.inner.write_str(data) }
+    pub fn write_fmt(&mut self, fmt: std::fmt::Arguments<'_>) -> std::fmt::Result { self.inner.write_fmt(fmt) }
+  }
+
+  pub trait Display {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result;
+    fn coloured(&self) -> ColouredDisplay<Self> { ColouredDisplay(self) }
+    fn uncoloured(&self) -> UncolouredDisplay<Self> { UncolouredDisplay(self) }
+  }
+
+  #[derive(Debug)]
+  pub struct ColouredDisplay<'a, T: ?Sized>(&'a T);
+  impl<'a, T: Display> std::fmt::Display for ColouredDisplay<'a, T> {
+    fn fmt(&self, inner: &mut std::fmt::Formatter) -> std::fmt::Result {
+      self.0.fmt(&mut Formatter { inner, enable: true })
+    }
+  }
+
+  #[derive(Debug)]
+  pub struct UncolouredDisplay<'a, T: ?Sized>(&'a T);
+  impl<'a, T: Display> std::fmt::Display for UncolouredDisplay<'a, T> {
+    fn fmt(&self, inner: &mut std::fmt::Formatter) -> std::fmt::Result {
+      self.0.fmt(&mut Formatter { inner, enable: false })
+    }
+  }
 }
