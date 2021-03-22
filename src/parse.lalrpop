@@ -38,6 +38,7 @@ AnyOneOrMore = {
 };
 
 Term = {
+  "everything" => Selector::Everything,
   "blocked" => Selector::Blocked,
   "low" => Selector::Priority(Priority::Low),
   "high" => Selector::Priority(Priority::High),
