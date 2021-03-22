@@ -2,6 +2,11 @@
 name = "fina"
 version = "0.1.0"
 authors = ["Kier Davis <me@kierdavis.com>"]
+description = "Opinionated to-do list manager"
+repository = "https://github.com/kierdavis/fina"
+license = "Apache-2.0"
+keywords = ["command-line", "todo", "to-do"]
+categories = ["command-line-utilities"]
 edition = "2018"
 
 [build-dependencies]
