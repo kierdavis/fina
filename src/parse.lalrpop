@@ -34,7 +34,7 @@ ImplicitAllOneOrMore = {
 };
 
 AllTwoOrMore: Vec<Selector> =
-  <head:Term> "and" <tail:AllOneOrMore> => {
+  <head:Term> ":and" <tail:AllOneOrMore> => {
     let mut tail = tail; tail.push(head); tail
   };
 AllOneOrMore = {
@@ -43,7 +43,7 @@ AllOneOrMore = {
 };
 
 AnyTwoOrMore: Vec<Selector> =
-  <head:Term> "or" <tail:AnyOneOrMore> => {
+  <head:Term> ":or" <tail:AnyOneOrMore> => {
     let mut tail = tail; tail.push(head); tail
   };
 AnyOneOrMore = {
@@ -52,15 +52,15 @@ AnyOneOrMore = {
 };
 
 Term = {
-  "everything" => Selector::Everything,
-  "blocked" => Selector::Blocked,
-  "low" => Selector::Priority(Priority::Low),
-  "high" => Selector::Priority(Priority::High),
-  "urgent" => Selector::Priority(Priority::Urgent),
+  ":everything" => Selector::Everything,
+  ":blocked" => Selector::Blocked,
+  ":low" => Selector::Priority(Priority::Low),
+  ":high" => Selector::Priority(Priority::High),
+  ":urgent" => Selector::Priority(Priority::Urgent),
   TaskId => Selector::Id(<>),
   Label => Selector::Label(<>),
   Word => Selector::Word(<>),
-  "not" <Term> => Selector::not(<>),
+  ":not" <Term> => Selector::not(<>),
   "(" <Selector> ")",
 };
 
