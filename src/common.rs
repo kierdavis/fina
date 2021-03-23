@@ -152,14 +152,17 @@ pub struct Task<Id> {
   #[serde(default, skip_serializing_if = "HashSet::is_empty")]
   pub blocked_on: HashSet<TaskId>,
 }
-impl<Id> Task<Id> {
+impl Task<TaskId> {
   pub fn sanitised(mut self) -> Self {
+    self.blocked_on.remove(&self.id);
     match &self.blocked_until {
       Some(date) if &Date::today() >= date => self.blocked_until = None,
       _ => {}
     }
     self
   }
+}
+impl<Id> Task<Id> {
   pub fn without_references_to<I>(mut self, ids: I) -> Self
   where
     I: IntoIterator<Item = TaskId>,
