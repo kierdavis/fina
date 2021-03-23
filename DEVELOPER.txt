@@ -1,0 +1,10 @@
+# Release steps
+
+* Remove the "-dev" suffix from the version in Cargo.toml.
+* Run "cargo build" to sync the version to Cargo.lock.
+* Commit this version change with the message "pre-release version bump".
+* "cargo publish"
+* "git tag v$VERSION"
+* Increment the patch number of the version in Cargo.toml, and add the "-dev" suffix back.
+* Run "cargo build" to sync the version to Cargo.lock.
+* Commit this version change with the message "post-release version bump".
