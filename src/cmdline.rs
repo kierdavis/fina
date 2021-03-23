@@ -214,10 +214,10 @@ fn app() -> clap::App<'static, 'static> {
             .validator(validate::<Selector>),
         )
         .arg(
-          clap::Arg::with_name("include_blocked")
+          clap::Arg::with_name("hide_blocked")
             .short("a")
-            .long("--all")
-            .help("show blocked tasks too"),
+            .long("--actionable")
+            .help("hide blocked tasks"),
         ),
     )
     .subcommand(
@@ -293,12 +293,11 @@ impl Args {
             .value_of_lossy("selector")
             .map(must_parse)
             .unwrap_or(Selector::Everything);
-          let selector =
-            if matches.is_present("include_blocked") || contains_explicit_blocked(&selector) {
-              selector
-            } else {
-              Selector::and(selector, Selector::not(Selector::Blocked))
-            };
+          let selector = if matches.is_present("hide_blocked") {
+            Selector::and(selector, Selector::not(Selector::Blocked))
+          } else {
+            selector
+          };
           Action::List { selector }
         }
         ("delete", Some(matches)) => Action::Delete {
@@ -324,16 +323,6 @@ where
   T::Err: Debug,
 {
   T::from_str(input.as_ref()).unwrap()
-}
-
-fn contains_explicit_blocked(selector: &Selector) -> bool {
-  match selector {
-    Selector::Blocked => true,
-    Selector::Not(child) => contains_explicit_blocked(child),
-    Selector::All(children) => children.iter().any(contains_explicit_blocked),
-    Selector::Any(children) => children.iter().any(contains_explicit_blocked),
-    _ => false,
-  }
 }
 
 #[cfg(test)]
