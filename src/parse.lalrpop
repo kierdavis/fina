@@ -23,11 +23,13 @@ pub Selector: Selector = {
   Terms,
 }
 
-AllTwoOrMore: Selector = <head:Terms> ":and" <tail:AllOneOrMore> => Selector::and(head, tail);
+AllTwoOrMore: Selector = <head:Terms> AndOperator <tail:AllOneOrMore> => Selector::and(head, tail);
 AllOneOrMore = { AllTwoOrMore, Terms };
+AndOperator = { "&", "&&" };
 
-AnyTwoOrMore: Selector = <head:Terms> ":or" <tail:AnyOneOrMore> => Selector::or(head, tail);
+AnyTwoOrMore: Selector = <head:Terms> OrOperator <tail:AnyOneOrMore> => Selector::or(head, tail);
 AnyOneOrMore = { AnyTwoOrMore, Terms };
+OrOperator = { "|", "||" };
 
 Terms: Selector = {
   <head:Term> <tail:Terms> => Selector::and(head, tail),
