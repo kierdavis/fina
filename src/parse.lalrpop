@@ -18,31 +18,19 @@ use std::str::FromStr;
 grammar;
 
 pub Selector: Selector = {
-  AllTwoOrMore => Selector::all(<>),
-  AnyTwoOrMore => Selector::any(<>),
-  ImplicitAll,
+  AllTwoOrMore,
+  AnyTwoOrMore,
+  Terms,
 }
 
-AllTwoOrMore: Vec<Selector> =
-  <head:ImplicitAll> ":and" <tail:AllOneOrMore> => {
-    let mut tail = tail; tail.push(head); tail
-  };
-AllOneOrMore = {
-  AllTwoOrMore,
-  ImplicitAll => vec![<>],
-};
+AllTwoOrMore: Selector = <head:Terms> ":and" <tail:AllOneOrMore> => Selector::and(head, tail);
+AllOneOrMore = { AllTwoOrMore, Terms };
 
-AnyTwoOrMore: Vec<Selector> =
-  <head:ImplicitAll> ":or" <tail:AnyOneOrMore> => {
-    let mut tail = tail; tail.push(head); tail
-  };
-AnyOneOrMore = {
-  AnyTwoOrMore,
-  ImplicitAll => vec![<>],
-};
+AnyTwoOrMore: Selector = <head:Terms> ":or" <tail:AnyOneOrMore> => Selector::or(head, tail);
+AnyOneOrMore = { AnyTwoOrMore, Terms };
 
-ImplicitAll: Selector = {
-  <head:Term> <tail:ImplicitAll> => Selector::and(head, tail),
+Terms: Selector = {
+  <head:Term> <tail:Terms> => Selector::and(head, tail),
   Term,
 };
 

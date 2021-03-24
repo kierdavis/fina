@@ -375,7 +375,6 @@ impl Selector {
       _ => Selector::Any(children),
     }
   }
-  #[allow(dead_code)]
   pub fn or(a: Selector, b: Selector) -> Self {
     Self::any(vec![a, b])
   }
