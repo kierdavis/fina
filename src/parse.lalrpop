@@ -66,4 +66,4 @@ Term = {
 
 TaskId: TaskId = r":[0-9]+" => TaskId::from_str(<>).unwrap();
 Label: String = r"@\S*" => String::from(&(<>[1..]));
-Word: String = r"[^:@\s]\S*" => String::from(<>);
+Word: String = r"[-\w]+" => String::from(<>);
