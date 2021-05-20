@@ -1,6 +1,6 @@
 [package]
 name = "fina"
-version = "0.3.1"
+version = "0.3.2-dev"
 authors = ["Kier Davis <me@kierdavis.com>"]
 description = "Opinionated to-do list manager"
 repository = "https://github.com/kierdavis/fina"
