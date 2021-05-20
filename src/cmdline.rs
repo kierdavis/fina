@@ -92,6 +92,7 @@ impl FromStr for RemovedBlockers {
 
 fn app() -> clap::App<'static, 'static> {
   clap::App::new("fina")
+    .version(clap::crate_version!())
     .setting(clap::AppSettings::SubcommandRequiredElseHelp)
     .subcommand(
       clap::SubCommand::with_name("new")
